@@ -1,15 +1,11 @@
-# Before you do anything please set download_path
-# or the location where you have downloaded the rar_file
-# snapshot for now : /nas2/harsimrat/hed-testing-deconv-hist-4/models/hed-model-5000
-rar_file: 'http://vcl.ucsd.edu/hed/HED-BSDS.tar'
-# location where HED-BSDS.tar would be downloaded and decompressed (Should already exist)
-download_path: '/home/harsimrat/hed-data'
-# location of snapshot and tensorbaord summary events (Should already exist)
-save_dir: /home/harsimrat/workspace/holy-edge/hed
-# location where to put the generated edgemaps during testing (Should already exist)
-test_output: /nas2/harsimrat/hed-testing-deconv-hist-4/test/model-5000
-# parameters from the paper
-model_weights_path: vgg16.npy
+
+rar_file: http://vcl.ucsd.edu/hed/HED-BSDS.tar
+download_path: /home/ubuntu/data1.5TB/hed
+models_dir: /home/ubuntu/PycharmProjects/ALISURE/sketch/holy-edge/models
+train_dir: /home/ubuntu/PycharmProjects/ALISURE/sketch/holy-edge/result
+test_output: /home/ubuntu/PycharmProjects/ALISURE/sketch/holy-edge/result/test
+model_weights_path: /home/ubuntu/PycharmProjects/ALISURE/sketch/holy-edge/models/vgg16.npy
+
 # training batch size, decide with your GPU size
 batch_size_train: 10
 # validation batch size, ran every val_interval
@@ -40,6 +36,7 @@ target_regression: True
 mean_pixel_value: [103.939, 116.779, 123.68]
 # RGB to BGR (VGG-16 trained with BGR blame OpenCV)
 channel_swap: [2, 1, 0]
+
 # training/validation data
 training:
     dir: HED-BSDS
@@ -48,6 +45,7 @@ training:
     image_width: 480
     image_height: 480
     n_channels: 3
+
 # testing data
 testing:
     dir: HED-BSDS
@@ -56,7 +54,8 @@ testing:
     image_width: 480
     image_height: 320
     n_channels: 3
+
 # use snapshot after test_snapshot intervals for testing
-test_snapshot: 5000
+test_snapshot: 15000
 # Apply testing_threshold after sigmoid to generate binary maps set to 0.0 for continous valued edge maps
 testing_threshold: 0.0
