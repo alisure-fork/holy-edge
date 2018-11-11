@@ -1,0 +1,2 @@
+model_checkpoint_path: "/home/ubuntu/PycharmProjects/ALISURE/sketch/holy-edge/models/hed-model-15000"
+all_model_checkpoint_paths: "/home/ubuntu/PycharmProjects/ALISURE/sketch/holy-edge/models/hed-model-15000"
