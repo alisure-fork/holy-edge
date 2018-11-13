@@ -34,21 +34,72 @@ class HEDTester(object):
         self.model.setup_testing(session)
 
         file_path = os.path.join(self.config['download_path'], self.config['testing']['list'])
-        train_list = self.tool.read_file_list(file_path)
+        test_list = self.tool.read_file_list(file_path)
+        test_list = [os.path.join(self.config['download_path'],
+                                  self.config['testing']['dir'], img) for img in test_list]
+        result_dir = self.config['test_output']
 
-        self.tool.print_info('Writing PNGs at {}'.format(self.config['test_output']))
+        self.tool.print_info('Writing PNGs at {}'.format(result_dir))
+        if not os.path.exists(result_dir):
+            os.makedirs(result_dir)
 
-        for idx, img in enumerate(train_list):
-            test_filename = os.path.join(self.config['download_path'], self.config['testing']['dir'], img)
-            im = self.fetch_image(test_filename)
+        for idx, test_filename in enumerate(test_list):
+            im = self._fetch_image(test_filename)
             edge_map = session.run(self.model.predictions, feed_dict={self.model.images: [im]})
-            self.save_edge_maps(edge_map, idx)
+            self._save_edge_maps(edge_map, os.path.join(result_dir, os.path.basename(test_filename)))
             self.tool.print_info('Done testing {}, {}'.format(test_filename, im.shape))
             pass
 
         pass
 
-    def save_edge_maps(self, em_maps, index):
+    def run_1(self, session, test_dir, result_dir):
+        if not self.init:
+            return
+
+        self.model.setup_testing(session)
+
+        test_list = [os.path.join(test_dir, test_file) for test_file in os.listdir(test_dir)]
+
+        self.tool.print_info('Writing PNGs at {}'.format(result_dir))
+        if not os.path.exists(result_dir):
+            os.makedirs(result_dir)
+
+        for idx, test_filename in enumerate(test_list):
+            im = self._fetch_image(test_filename)
+            edge_map = session.run(self.model.predictions, feed_dict={self.model.images: [im]})
+            self._save_edge_maps(edge_map, os.path.join(result_dir, os.path.basename(test_filename)))
+            self.tool.print_info('Done testing {}, {}'.format(test_filename, im.shape))
+            pass
+
+        pass
+
+    def run_2(self, session, test_dir, result_dir):
+        if not self.init:
+            return
+
+        self.model.setup_testing(session)
+
+        self.tool.print_info('Writing PNGs at {}'.format(result_dir))
+
+        for path, dirs, files in os.walk(test_dir):
+
+            result_path = path.replace(test_dir, result_dir)
+            if not os.path.exists(result_path):
+                os.makedirs(result_path)
+
+            for fileName in files:
+                if fileName.endswith(".png") or fileName.endswith(".jpg"):
+                    now_file_name = os.path.join(path, fileName)
+                    im = self._fetch_image(now_file_name)
+                    edge_map = session.run(self.model.predictions, feed_dict={self.model.images: [im]})
+                    self._save_edge_maps(edge_map, os.path.join(result_path, os.path.basename(fileName)))
+                    self.tool.print_info('Done testing {}, {}'.format(fileName, im.shape))
+                pass
+            pass
+
+        pass
+
+    def _save_edge_maps(self, em_maps, test_output):
         # Take the edge map from the network from side layers and fuse layer
         em_maps = [e[0] for e in em_maps]
         em_maps = em_maps + [np.mean(np.array(em_maps), axis=0)]
@@ -57,34 +108,32 @@ class HEDTester(object):
             em[em < self.config['testing_threshold']] = 0.0
             em = np.tile(255.0 * (1.0 - em), [1, 1, 3])
             em = Image.fromarray(np.uint8(em))
-            if not os.path.exists(self.config['test_output']):
-                os.makedirs(self.config['test_output'])
-            em.save(os.path.join(self.config['test_output'], 'testing-{}-{:03}.png'.format(index, idx)))
+            em.save(test_output)
             pass
         pass
 
-    def fetch_image(self, test_image):
+    def _fetch_image(self, test_image):
         image = None
         if os.path.exists(test_image):
             try:
-                image = self.capture_pixels(test_image)
+                image = self._capture_pixels(test_image)
             except Exception as err:
                 print(self.tool.print_error('[Testing] Error with image file {0} {1}'.format(test_image, err)))
             pass
         return image
 
-    def capture_pixels(self, image_buffer):
+    def _capture_pixels(self, image_buffer):
         image = Image.open(image_buffer)
         image = image.resize((self.config['testing']['image_width'], self.config['testing']['image_height']))
         image = np.array(image, np.float32)
-        image = self.colorize(image)
+        image = self._colorize(image)
 
         image = image[:, :, self.config['channel_swap']]
         image -= self.config['mean_pixel_value']
         return image
 
     @staticmethod
-    def colorize(image):
+    def _colorize(image):
         # BW to 3 channel RGB image
         if image.ndim == 2:
             image = np.tile(image[:, :, np.newaxis], (1, 1, 3))
